@@ -16,26 +16,33 @@ router.get('/', (req, res) => {
 
 // GET /api/users/1
 router.get('/:id', (req, res) => {
-    User.findOne({
-        attributes: {
-           exclude: ['password'],
-           include: [
-            {
-              model: Post,
-              attributes: ['id', 'title', 'post_url', 'created_at']
-            },
-            {
-              model: Post,
-              attributes: ['title'],
-              through: Vote,
-              as: 'voted_posts'
-            }
-          ]
-           },
-        where: {
-          id: req.params.id
+  User.findOne({
+    attributes: { exclude: ['password'] },
+    where: {
+      id: req.params.id
+    },
+    include: [
+      {
+        model: Post,
+        attributes: ['id', 'title', 'post_url', 'created_at']
+      },
+      // include the Comment model here:
+      {
+        model: Comment,
+        attributes: ['id', 'comment_text', 'created_at'],
+        include: {
+          model: Post,
+          attributes: ['title']
         }
-      })
+      },
+      {
+        model: Post,
+        attributes: ['title'],
+        through: Vote,
+        as: 'voted_posts'
+      }
+    ]
+  })
         .then(dbUserData => {
           if (!dbUserData) {
             res.status(404).json({ message: 'No user found with this id' });
@@ -71,7 +78,7 @@ router.post('/login', (req, res) => {
   where: {
     email: req.body.email
   }
-}).then(dbUserData => {
+  }).then(dbUserData => {
   if (!dbUserData) {
     res.status(400).json({ message: 'No user with that email address!' });
     return;
